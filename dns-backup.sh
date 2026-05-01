@@ -24,9 +24,13 @@ log() {
 
 log "====== Technitium DNS Backup gestartet ======"
 
-# Prüfen ob DNS-Server erreichbar ist
-if ! curl -sf --max-time 10 "$DNS_HOST/api/user/session/status?token=$API_TOKEN" > /dev/null; then
-    log "FEHLER: DNS-Server unter $DNS_HOST nicht erreichbar oder Token ungültig!"
+# Prüfen ob DNS-Server erreichbar ist und Token gültig
+RESPONSE=$(curl -s --max-time 10 "$DNS_HOST/api/zones/list?token=$API_TOKEN")
+if echo "$RESPONSE" | grep -q '"status":"error"'; then
+    log "FEHLER: Token ungültig! Serverantwort: $RESPONSE"
+    exit 1
+elif ! echo "$RESPONSE" | grep -q '"status":"ok"'; then
+    log "FEHLER: DNS-Server unter $DNS_HOST nicht erreichbar!"
     exit 1
 fi
 

@@ -57,9 +57,13 @@ fi
 
 # --- Server-Erreichbarkeit prüfen ----------------------------
 log "Prüfe Server-Erreichbarkeit..."
-if ! curl -sf --max-time 10 "$DNS_HOST/api/user/session/status?token=$API_TOKEN" > /dev/null; then
-    log "FEHLER: Server $DNS_HOST nicht erreichbar oder Token ungültig!"
+RESPONSE=$(curl -s --max-time 10 "$DNS_HOST/api/zones/list?token=$API_TOKEN")
+if echo "$RESPONSE" | grep -q '"status":"error"'; then
+    log "FEHLER: Token ungültig! Serverantwort: $RESPONSE"
     log "Tipp: Auf einem Frisch-System erst im Webinterface einen Token anlegen."
+    exit 1
+elif ! echo "$RESPONSE" | grep -q '"status":"ok"'; then
+    log "FEHLER: Server $DNS_HOST nicht erreichbar!"
     exit 1
 fi
 
@@ -104,7 +108,7 @@ log "Restore gesendet. Warte 15 Sekunden auf Server-Neustart..."
 sleep 15
 
 # Prüfen ob Server wieder erreichbar ist
-if curl -sf --max-time 15 "$DNS_HOST/api/user/session/status?token=$API_TOKEN" > /dev/null; then
+if curl -s --max-time 15 "$DNS_HOST/api/zones/list?token=$API_TOKEN" | grep -q '"status":"ok"'; then
     log "Server ist wieder erreichbar."
     log "====== Restore erfolgreich abgeschlossen! ======"
 else
